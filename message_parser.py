@@ -14,6 +14,7 @@ def parse_message(message):
     if not message:
         return None
     
+    message = message.strip()
     type = message[0]
     payload = message[1:].strip()
 

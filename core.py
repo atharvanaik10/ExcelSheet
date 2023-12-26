@@ -1,7 +1,8 @@
 import re
-import numpy as np
 import csv
+from datetime import date
 from message_parser import parse_message
+from dotenv import load_dotenv
 
 categories = {
     1: "Rent",
@@ -18,10 +19,19 @@ categories = {
     12: "Other"
 }
 
+filename = "spending_data.csv"
+
 def get_category(place):
     return None
 
 def process_spending(payload):
+    (amount, desc, category) = payload
+
+    if category == None:
+        send_message(1)
+    else:
+        write_to_sheet(date.today(), amount, category)
+        write_to_csv(date.today(), amount, desc, category)
     return None
 
 def process_fetching(payload):
@@ -34,9 +44,23 @@ def write_to_sheet(date, amount, category):
     return None
 
 def write_to_csv(date, amount, desc, category):
+    with open(filename,'a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([date, amount, desc, category])
     return None
 
-def send_error(code):
+def send_message(code):
+    """Calls the Messenger Send API and sends back a message according to the 
+    codes below.
+
+    Args:
+        code (int): 
+            0 - Invalid message/help
+            1 - No category provided in spending message
+
+    Returns:
+        _type_: _description_
+    """
     return None
 
 def process_message(message):
@@ -50,4 +74,4 @@ def process_message(message):
     if type == 1:
         process_spending(payload)
     else:
-        send_error()
+        send_message(0)
