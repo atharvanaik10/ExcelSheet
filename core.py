@@ -10,13 +10,12 @@ categories = {
     3: "Telephone",
     4: "Household",
     5: "Food",
-    6: "Transport",
+    6: "Travel",
     7: "Tax",
     8: "Subscriptions",
-    9: "Travel",
-    10: "Insurance",
-    11: "Medical",
-    12: "Other"
+    9: "Insurance",
+    10: "Medical",
+    11: "Other"
 }
 
 filename = "spending_data.csv"
@@ -28,6 +27,8 @@ def process_spending(payload):
     (amount, desc, category) = payload
 
     if category == None:
+        # If category is missing, reprompt the user for full message
+        # TODO handle stateful messaging where user can just add category
         send_message(1)
     else:
         write_to_sheet(date.today(), amount, category)
@@ -50,8 +51,7 @@ def write_to_csv(date, amount, desc, category):
     return None
 
 def send_message(code):
-    """Calls the Messenger Send API and sends back a message according to the 
-    codes below.
+    """Sends back a message using the flask app.py.
 
     Args:
         code (int): 
