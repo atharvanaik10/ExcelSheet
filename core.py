@@ -3,6 +3,7 @@ import csv
 from datetime import date
 from message_parser import parse_message
 from dotenv import load_dotenv
+import app
 
 categories = {
     1: "Rent",
@@ -23,13 +24,13 @@ filename = "spending_data.csv"
 def get_category(place):
     return None
 
-def process_spending(payload):
+def process_spending(sender_id, payload):
     (amount, desc, category) = payload
 
     if category == None:
         # If category is missing, reprompt the user for full message
         # TODO handle stateful messaging where user can just add category
-        send_message(1)
+        send_message(sender_id, 1)
     else:
         write_to_sheet(date.today(), amount, category)
         write_to_csv(date.today(), amount, desc, category)
@@ -47,10 +48,10 @@ def write_to_sheet(date, amount, category):
 def write_to_csv(date, amount, desc, category):
     with open(filename,'a', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow([date, amount, desc, category])
+        writer.writerow([date, amount, desc, category, categories[category]])
     return None
 
-def send_message(code):
+def send_message(sender_id, code):
     """Sends back a message using the flask app.py.
 
     Args:
@@ -61,9 +62,16 @@ def send_message(code):
     Returns:
         _type_: _description_
     """
+    message = ""
+    if code == 0:
+        message = "Invalid message. Please send a spending message as $<amt> <description> <category>"
+    elif code == 1:
+        message = "No category found. Please send a spending message as $<amt> <description> <category>"
+    
+    response = app.call_send_api(sender_id, message)
     return None
 
-def process_message(message):
+def process_message(sender_id, message):
     """Recieves message from Flask API and processes it. If the message cannot 
     be parsed into one of the 3 message types, sends back a help message.
 
@@ -72,6 +80,7 @@ def process_message(message):
     """
     type, payload = parse_message(message)
     if type == 1:
-        process_spending(payload)
+        process_spending(sender_id, payload)
     else:
-        send_message(0)
+        print("Invalid message")
+        send_message(sender_id, 0)

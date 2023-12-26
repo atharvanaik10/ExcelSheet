@@ -3,6 +3,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 import core
 import os
+import requests
 
 app = Flask(__name__)
 CORS(app)
@@ -10,6 +11,21 @@ CORS(app)
 load_dotenv()
 VERIFY_TOKEN = os.getenv('VERIFY_TOKEN')
 PAGE_ACCESS_TOKEN = os.getenv('PAGE_ACCESS_TOKEN')
+FACEBOOK_API_URL = os.getenv('FACEBOOK_API_URL')
+
+def call_send_api(sender_id, message):
+    headers = {"Content-Type": "application/json"}
+
+    auth = {"access_token": PAGE_ACCESS_TOKEN}
+
+    payload = {
+        "messaging_type": "RESPONSE",
+        "recipient": {"id": sender_id},
+        "message": {"text": message}
+    }
+    print(payload)
+    response = requests.post(FACEBOOK_API_URL, headers=headers, params=auth, json=payload)
+    return response
 
 @app.route('/', methods=['GET'])
 def verify_token():
@@ -34,7 +50,11 @@ def webhook():
     # TODO get the message from the data
     # TODO call processs message from core
     try:
-        print(data['entry'])
+        entries = data['entry']
+        for entry in entries:
+            message = entry['messaging'][0]['message']['text']
+            sender_id = entry['messaging'][0]['sender']['id']
+            core.process_message(sender_id, message)
     except:
         ValueError("Error parsing data")
     return "Success", 200
