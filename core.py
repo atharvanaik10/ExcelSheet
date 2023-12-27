@@ -67,12 +67,12 @@ def write_to_sheet(date, amount, category):
     sheet = client.open_by_key(SHEET_ID).worksheet(str(date.year))
     print(sheet)
     # Find month col and category row
-    col = sheet.find(str(date.month)).col
+    col = sheet.find(str(date.strftime("%B"))).col
     row = sheet.find(str(category)).row
     print("Fount row and col: " + str(row) + ", " + str(col))
 
     # Update value in the cell
-    curr_val = sheet.cell(row, col).value
+    curr_val = sheet.cell(row, col, value_render_option='UNFORMATTED_VALUE').value
     new_val = float(curr_val) + float(amount) if curr_val else float(amount)
 
     sheet.update_cell(row, col, new_val)
