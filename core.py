@@ -1,9 +1,13 @@
 import re
 import csv
-from datetime import date
+from datetime import datetime
 from message_parser import parse_message
 from dotenv import load_dotenv
 import app
+import os
+import gspread
+from google.oauth2.service_account import Credentials
+from google.auth.transport.requests import Request
 
 categories = {
     1: "Rent",
@@ -21,19 +25,25 @@ categories = {
 
 filename = "spending_data.csv"
 
+load_dotenv()
+CREDENTIALS_JSON = os.getenv("CREDENTIALS_JSON")
+SHEET_ID = os.getenv("SHEET_ID")
+
 def get_category(place):
     return None
 
 def process_spending(sender_id, payload):
-    (amount, desc, category) = payload
+    (amount, desc, category_int) = payload
 
-    if category == None:
+    if category_int == None:
         # If category is missing, reprompt the user for full message
         # TODO handle stateful messaging where user can just add category
         send_message(sender_id, 1)
     else:
-        write_to_sheet(date.today(), amount, category)
-        write_to_csv(date.today(), amount, desc, category)
+        print("Writing to sheet")
+        write_to_sheet(datetime.now(), amount, categories[category_int])
+        print("Writing to csv")
+        write_to_csv(datetime.now(), amount, desc, category_int, categories[category_int])
     return None
 
 def process_fetching(payload):
@@ -43,12 +53,36 @@ def process_analytics(payload):
     return NotImplementedError
 
 def write_to_sheet(date, amount, category):
+    # Create sheets client
+    try:
+        # scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
+        # creds = Credentials.from_service_account_file(CREDENTIALS_JSON, scopes=scope)
+        # creds.refresh(Request())
+        client = gspread.service_account(filename=CREDENTIALS_JSON)
+        print("here")
+    except Exception as e:
+        print(e)
+
+    # Open the current year sheet
+    sheet = client.open_by_key(SHEET_ID).worksheet(str(date.year))
+    print(sheet)
+    # Find month col and category row
+    col = sheet.find(str(date.month)).col
+    row = sheet.find(str(category)).row
+    print("Fount row and col: " + str(row) + ", " + str(col))
+
+    # Update value in the cell
+    curr_val = sheet.cell(row, col).value
+    new_val = float(curr_val) + float(amount) if curr_val else float(amount)
+
+    sheet.update_cell(row, col, new_val)
+
     return None
 
-def write_to_csv(date, amount, desc, category):
+def write_to_csv(date, amount, desc, category_int, category):
     with open(filename,'a', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow([date, amount, desc, category, categories[category]])
+        writer.writerow([date, amount, desc, category_int, category])
     return None
 
 def send_message(sender_id, code):
@@ -64,7 +98,7 @@ def send_message(sender_id, code):
     """
     message = ""
     if code == 0:
-        message = "Invalid message. Please send a spending message as $<amt> <description> <category>"
+        message = "Invalid message. Please send a spending message as $<amt> <description> <category>. The categories are as follows:" + "\n".join([f"{key}. {value}" for key, value in categories.items()])
     elif code == 1:
         message = "No category found. Please send a spending message as $<amt> <description> <category>"
     
