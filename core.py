@@ -35,15 +35,16 @@ def get_category(place):
 def process_spending(sender_id, payload):
     (amount, desc, category_int) = payload
 
-    if category_int == None:
+    if category_int == None or category_int > len(categories):
         # If category is missing, reprompt the user for full message
         # TODO handle stateful messaging where user can just add category
-        send_message(sender_id, 1)
+        send_message(sender_id, 2)
     else:
         print("Writing to sheet")
         write_to_sheet(datetime.now(), amount, categories[category_int])
         print("Writing to csv")
         write_to_csv(datetime.now(), amount, desc, category_int, categories[category_int])
+        send_message(sender_id, 0, amount, categories[category_int])
     return None
 
 def process_fetching(payload):
@@ -85,21 +86,24 @@ def write_to_csv(date, amount, desc, category_int, category):
         writer.writerow([date, amount, desc, category_int, category])
     return None
 
-def send_message(sender_id, code):
+def send_message(sender_id, code, amount=None, category=None):
     """Sends back a message using the flask app.py.
 
     Args:
         code (int): 
-            0 - Invalid message/help
-            1 - No category provided in spending message
+            0 - Success added spend with amt and category
+            1 - Invalid message/help
+            2 - No category provided in spending message
 
     Returns:
         _type_: _description_
     """
     message = ""
     if code == 0:
-        message = "Invalid message. Please send a spending message as $<amt> <description> <category>. The categories are as follows:" + "\n".join([f"{key}. {value}" for key, value in categories.items()])
+        message = f"Successfully added {amount} to {category}."
     elif code == 1:
+        message = "Invalid message. Please send a spending message as $<amt> <description> <category>. The categories are as follows:\n" + "\n".join([f"{key}. {value}" for key, value in categories.items()])
+    elif code == 2:
         message = "No category found. Please send a spending message as $<amt> <description> <category>"
     
     response = app.call_send_api(sender_id, message)
@@ -117,4 +121,4 @@ def process_message(sender_id, message):
         process_spending(sender_id, payload)
     else:
         print("Invalid message")
-        send_message(sender_id, 0)
+        send_message(sender_id, 1)
