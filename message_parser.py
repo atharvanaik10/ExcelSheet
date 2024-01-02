@@ -29,9 +29,9 @@ def parse_message(message):
 
         try:
             category = parts[2]
-            return 1, (amount, desc, int(category))
+            return 1, (float(amount), desc, int(category))
         except (ValueError or IndexError):
-            return 1, (amount, desc, None)
+            return 1, (float(amount), desc, None)
         
     # elif type == '?':
     #     print("Fetching")

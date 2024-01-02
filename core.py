@@ -8,6 +8,7 @@ import os
 import gspread
 from google.oauth2.service_account import Credentials
 from google.auth.transport.requests import Request
+from google.cloud import firestore
 
 categories = {
     1: "Rent",
@@ -26,7 +27,7 @@ categories = {
 filename = "spending_data.csv"
 
 load_dotenv()
-CREDENTIALS_JSON = os.getenv("CREDENTIALS_JSON")
+GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 SHEET_ID = os.getenv("SHEET_ID")
 
 def get_category(place):
@@ -40,10 +41,9 @@ def process_spending(sender_id, payload):
         # TODO handle stateful messaging where user can just add category
         send_message(sender_id, 2)
     else:
-        print("Writing to sheet")
         write_to_sheet(datetime.now(), amount, categories[category_int])
-        print("Writing to csv")
-        write_to_csv(datetime.now(), amount, desc, category_int, categories[category_int])
+        # TODO write to databae
+        # write_to_csv(datetime.now(), amount, desc, category_int, categories[category_int])
         send_message(sender_id, 0, amount, categories[category_int])
     return None
 
@@ -59,7 +59,7 @@ def write_to_sheet(date, amount, category):
         # scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
         # creds = Credentials.from_service_account_file(CREDENTIALS_JSON, scopes=scope)
         # creds.refresh(Request())
-        client = gspread.service_account(filename=CREDENTIALS_JSON)
+        client = gspread.service_account(filename=GOOGLE_APPLICATION_CREDENTIALS)
         print("here")
     except Exception as e:
         print(e)
@@ -86,6 +86,36 @@ def write_to_csv(date, amount, desc, category_int, category):
         writer.writerow([date, amount, desc, category_int, category])
     return None
 
+def write_to_firestore(date, amount, desc, category_int, category):
+    """Connects to firestore and adds a spending transaction to the database 
+    collection.
+
+    Args:
+        date (datetime): date
+        amount (float): amount
+        desc (string): description
+        category_int (int): category lookup integer
+        category (string): category
+
+    Returns:
+        None: None on success
+    """
+    credentials = Credentials.from_service_account_file(GOOGLE_APPLICATION_CREDENTIALS)
+    db = firestore.Client(credentials=credentials, project="excelsheet-101002")
+
+    spending_data_collection = db.collections("spending")
+
+    data = {
+        'date': date,
+        'amount': amount,
+        'desc': desc,
+        'category_int': category_int,
+        'category': category
+    }
+
+    spending_data_collection.add(data)
+    return None
+
 def send_message(sender_id, code, amount=None, category=None):
     """Sends back a message using the flask app.py.
 
@@ -96,7 +126,7 @@ def send_message(sender_id, code, amount=None, category=None):
             2 - No category provided in spending message
 
     Returns:
-        _type_: _description_
+        None: None on call.
     """
     message = ""
     if code == 0:
