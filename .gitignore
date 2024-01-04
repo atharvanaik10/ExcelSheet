@@ -4,3 +4,4 @@ __pycache__
 google_sheets_key.json
 spending_data.csv
 app.yaml
+.gcloudignore
