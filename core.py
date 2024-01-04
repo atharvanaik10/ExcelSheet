@@ -34,6 +34,15 @@ def get_category(place):
     return None
 
 def process_spending(sender_id, payload):
+    """Processes spending messages.
+
+    Args:
+        sender_id (string): sender_id from messenger
+        payload (tuple): (amount, description, category_integer as specified in dict)
+
+    Returns:
+        None: none
+    """
     (amount, desc, category_int) = payload
 
     if category_int == None or category_int > len(categories):
@@ -42,7 +51,7 @@ def process_spending(sender_id, payload):
         send_message(sender_id, 2)
     else:
         write_to_sheet(datetime.now(), amount, categories[category_int])
-        # TODO write to databae
+        write_to_firestore(datetime.now(), amount, desc, category_int, categories[category_int])
         # write_to_csv(datetime.now(), amount, desc, category_int, categories[category_int])
         send_message(sender_id, 0, amount, categories[category_int])
     return None
@@ -55,22 +64,13 @@ def process_analytics(payload):
 
 def write_to_sheet(date, amount, category):
     # Create sheets client
-    try:
-        # scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
-        # creds = Credentials.from_service_account_file(CREDENTIALS_JSON, scopes=scope)
-        # creds.refresh(Request())
-        client = gspread.service_account(filename=GOOGLE_APPLICATION_CREDENTIALS)
-        print("here")
-    except Exception as e:
-        print(e)
+    client = gspread.service_account(filename=GOOGLE_APPLICATION_CREDENTIALS)
 
     # Open the current year sheet
     sheet = client.open_by_key(SHEET_ID).worksheet(str(date.year))
-    print(sheet)
     # Find month col and category row
     col = sheet.find(str(date.strftime("%B"))).col
     row = sheet.find(str(category)).row
-    print("Fount row and col: " + str(row) + ", " + str(col))
 
     # Update value in the cell
     curr_val = sheet.cell(row, col, value_render_option='UNFORMATTED_VALUE').value
@@ -100,10 +100,10 @@ def write_to_firestore(date, amount, desc, category_int, category):
     Returns:
         None: None on success
     """
-    credentials = Credentials.from_service_account_file(GOOGLE_APPLICATION_CREDENTIALS)
+    credentials = Credentials.from_service_account_file(filename=GOOGLE_APPLICATION_CREDENTIALS)
     db = firestore.Client(credentials=credentials, project="excelsheet-101002")
 
-    spending_data_collection = db.collections("spending")
+    spending_data_collection = db.collection("spending")
 
     data = {
         'date': date,
@@ -150,5 +150,4 @@ def process_message(sender_id, message):
     if type == 1:
         process_spending(sender_id, payload)
     else:
-        print("Invalid message")
         send_message(sender_id, 1)

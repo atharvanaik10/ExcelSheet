@@ -23,7 +23,6 @@ def call_send_api(sender_id, message):
         "recipient": {"id": sender_id},
         "message": {"text": message}
     }
-    print(payload)
     response = requests.post(FACEBOOK_API_URL, headers=headers, params=auth, json=payload)
     return response
 
@@ -55,8 +54,9 @@ def webhook():
             message = entry['messaging'][0]['message']['text']
             sender_id = entry['messaging'][0]['sender']['id']
             core.process_message(sender_id, message)
-    except:
-        ValueError("Error parsing data")
+    except Exception as e:
+        # Catch all for any exceptions in core
+        print(e)
     return "Success", 200
 
 if __name__ == "__main__":

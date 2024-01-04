@@ -19,7 +19,6 @@ def parse_message(message):
     payload = message[1:].strip()
 
     if type == '$':
-        print("Spending")
         parts = payload.split()
         if len(parts) < 2:
             return None, None, None
