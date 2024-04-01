@@ -13,7 +13,7 @@ ExcelSheet is a Facebook Messenger Chatbot that tracks user spending.
 
 Currently, spending can be tracked in one of 11 categories and spending messages need to follow a rigid structure. Using this collected spending data, the end goal of this project is to develop a language model that automatically categorizes spending based on descriptions. Another future goal is to provide descriptive and prescriptive analysis within chatbot conversation.
 
-**Note:** This app is currently private/in-beta on Facebook Messenger and not publicly availablt.
+**Note:** This app is currently private/in beta on Facebook Messenger and not publicly available.
 
 ## Running with ngrok
 
