@@ -9,9 +9,11 @@ ExcelSheet is a Facebook Messenger Chatbot that tracks user spending.
 2. The request is sent to this API hosted on [Google Cloud App Engine](https://cloud.google.com/appengine?hl=en)
 3. The application writes spending data to a centralized Google Sheet using the [Google Sheets API](https://developers.google.com/sheets/api/guides/concepts).
 
-<img src="/excelsheet_demo.jpg.jpg" width="200"/>
+<img src="/excelsheet_demo.jpg" width="200"/>
 
 Currently, spending can be tracked in one of 11 categories and spending messages need to follow a rigid structure. Using this collected spending data, the end goal of this project is to develop a language model that automatically categorizes spending based on descriptions. Another future goal is to provide descriptive and prescriptive analysis within chatbot conversation.
+
+**Note:** This app is currently private/in-beta on Facebook Messenger and not publicly availablt.
 
 ## Running with ngrok
 
